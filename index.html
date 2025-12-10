@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task 1: Cyber Image Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* --- 1. CSS VARIABLES (Hacker Theme) --- */
+  :root {
+    --bg-color: #050505;
+    --card-bg: #0f0f0f;
+    --text-main: #e0e0e0;
+    --accent-green: #00ff41;
+    --shadow-green: 0 0 15px rgba(0, 255, 65, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { 
+    color: var(--accent-green); 
+    font-family: 'JetBrains Mono', monospace; 
+    text-transform: uppercase; 
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  
+  /* --- 2. FILTER BUTTONS (Bonus Task) --- */
+  .filter-nav {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+  }
+
+  .filter-btn {
+    background: var(--card-bg);
+    color: var(--accent-green);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    padding: 10px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: 0.3s;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* Hover & Active States */
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent-green);
+    color: #000;
+    box-shadow: 0 0 15px var(--accent-green);
+  }
+
+  /* --- 3. GALLERY GRID LAYOUT --- */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .gallery-item {
+    position: relative;
+    height: 250px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 255, 65, 0.1);
+    cursor: pointer;
+    background: #000;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .gallery-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-green);
+    border-color: var(--accent-green);
+  }
+
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    opacity: 0.8;
+  }
+
+  .gallery-item:hover img { 
+    transform: scale(1.1); 
+    opacity: 1;
+  }
+
+  /* Overlay Text on Hover */
+  .item-overlay {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    padding: 15px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gallery-item:hover .item-overlay { opacity: 1; }
+  
+  .item-category { color: var(--accent-green); font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; display: block; }
+  .item-caption { color: #fff; font-size: 1rem; display: block; margin-top: 5px; font-weight: 600; }
+
+  /* --- 4. LIGHTBOX (Full Screen View) --- */
+  .lightbox {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(5px);
+  }
+
+  .lightbox.active { opacity: 1; pointer-events: all; }
+
+  .lightbox-content { position: relative; max-width: 90%; max-height: 90vh; text-align: center; }
+
+  .lightbox-img {
+    max-width: 100%; max-height: 80vh;
+    border: 2px solid var(--accent-green);
+    box-shadow: var(--shadow-green);
+    display: block;
+    margin: 0 auto;
+  }
+
+  .lightbox-details {
+    color: var(--accent-green);
+    margin-top: 15px; 
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+  }
+
+  /* Navigation Controls */
+  .close-btn { 
+    position: absolute; top: 20px; right: 30px; 
+    color: #fff; font-size: 3rem; cursor: pointer; z-index: 101; 
+    transition: 0.2s;
+  }
+  .close-btn:hover { color: var(--accent-green); }
+
+  .nav-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.5); color: var(--accent-green);
+    width: 50px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; cursor: pointer; border-radius: 50%;
+    user-select: none; transition: 0.3s; border: 1px solid transparent;
+  }
+  .nav-btn:hover { 
+    background: var(--accent-green); 
+    color: #000; 
+    box-shadow: 0 0 15px var(--accent-green);
+  }
+  .prev-btn { left: 20px; }
+  .next-btn { right: 20px; }
+
+  /* Mobile Adjustments */
+  @media (max-width: 768px) {
+    .nav-btn { width: 40px; height: 40px; font-size: 1.2rem; }
+    .prev-btn { left: 10px; }
+    .next-btn { right: 10px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>// SECURE_GALLERY</h1>
+    <p style="color: #888; font-family: 'JetBrains Mono', monospace;">[ Filtered Data Stream ]</p>
+  </header>
+
+  <div class="filter-nav">
+    <button class="filter-btn active" onclick="filterGallery('all')">ALL DATA</button>
+    <button class="filter-btn" onclick="filterGallery('cyber')">CYBER</button>
+    <button class="filter-btn" onclick="filterGallery('tech')">TECH</button>
+    <button class="filter-btn" onclick="filterGallery('ai')">AI</button>
+  </div>
+
+  <div class="gallery-grid" id="gallery-grid"></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <span class="close-btn" onclick="closeLightbox()">&times;</span>
+  <span class="nav-btn prev-btn" onclick="changeImage(-1)">&#10094;</span>
+  <span class="nav-btn next-btn" onclick="changeImage(1)">&#10095;</span>
+  
+  <div class="lightbox-content">
+    <img src="" alt="Zoomed Image" class="lightbox-img" id="lightbox-img">
+    <div class="lightbox-details" id="lightbox-caption"></div>
+  </div>
+</div>
+
+<script>
+  // --- 1. CONFIGURATION: Image Database ---
+  // Using picsum.photos for reliable high-quality placeholders
+  const images = [
+    { id: 1, src: 'https://picsum.photos/id/532/800/600', category: 'cyber', caption: 'Network Security Hub' },
+    { id: 2, src: 'https://picsum.photos/id/0/800/600', category: 'tech', caption: 'Workstation Setup' },
+    { id: 3, src: 'https://picsum.photos/id/20/800/600', category: 'tech', caption: 'Data Processing Unit' },
+    { id: 4, src: 'https://picsum.photos/id/60/800/600', category: 'tech', caption: 'Hardware Analysis' },
+    { id: 5, src: 'https://picsum.photos/id/119/800/600', category: 'tech', caption: 'System Architecture' },
+    { id: 6, src: 'https://picsum.photos/id/180/800/600', category: 'tech', caption: 'Laptop Diagnostics' },
+    { id: 7, src: 'https://picsum.photos/id/96/800/600', category: 'cyber', caption: 'Encrypted Hardware' },
+    { id: 8, src: 'https://picsum.photos/id/201/800/600', category: 'ai', caption: 'AI Logic Matrix' }
+  ];
+
+  // --- 2. GLOBAL VARIABLES ---
+  const grid = document.getElementById('gallery-grid');
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxCaption = document.getElementById('lightbox-caption');
+  
+  let currentImages = []; // Currently filtered list
+  let currentIndex = 0;   // Index in the filtered list
+
+  // --- 3. FILTER FUNCTION (Handles Grid Rendering) ---
+  function filterGallery(category) {
+    // A. Update Active Button State
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+      const btnText = btn.innerText.toUpperCase();
+      if(category === 'all' && btnText === 'ALL DATA') btn.classList.add('active');
+      else if(btnText === category.toUpperCase()) btn.classList.add('active');
+    });
+
+    // B. Filter the Data
+    currentImages = category === 'all' 
+      ? images 
+      : images.filter(img => img.category === category);
+
+    // C. Clear and Rebuild Grid
+    grid.innerHTML = '';
+    
+    currentImages.forEach((img, index) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.onclick = () => openLightbox(index); // Pass index relative to filtered list
+
+      // Fade In Animation
+      item.style.animation = `fadeIn 0.5s ease forwards ${index * 0.1}s`;
+      item.style.opacity = '0';
+
+      item.innerHTML = `
+        <img src="${img.src}" alt="${img.caption}">
+        <div class="item-overlay">
+          <span class="item-category">[${img.category.toUpperCase()}]</span>
+          <span class="item-caption">${img.caption}</span>
+        </div>
+      `;
+      grid.appendChild(item);
+    });
+  }
+
+  // --- 4. LIGHTBOX FUNCTIONS ---
+  function openLightbox(index) {
+    currentIndex = index;
+    updateLightbox();
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Stop scrolling
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = 'auto'; // Resume scrolling
+  }
+
+  function changeImage(direction) {
+    currentIndex += direction;
+    // Loop logic (End -> Start, Start -> End)
+    if (currentIndex >= currentImages.length) currentIndex = 0;
+    if (currentIndex < 0) currentIndex = currentImages.length - 1;
+    updateLightbox();
+  }
+
+  function updateLightbox() {
+    const imgData = currentImages[currentIndex];
+    // Add fade effect for smoother transition
+    lightboxImg.style.opacity = 0;
+    setTimeout(() => {
+      lightboxImg.src = imgData.src;
+      lightboxCaption.innerText = `${imgData.caption} [${currentIndex + 1}/${currentImages.length}]`;
+      lightboxImg.style.opacity = 1;
+    }, 200);
+  }
+
+  // --- 5. INITIALIZATION ---
+  // Inject Animation CSS dynamically
+  const style = document.createElement('style');
+  style.innerHTML = `@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`;
+  document.head.appendChild(style);
+
+  // Initial Load
+  document.addEventListener('DOMContentLoaded', () => {
+    filterGallery('all');
+  });
+
+  // Keyboard Support
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowRight') changeImage(1);
+    if (e.key === 'ArrowLeft') changeImage(-1);
+  });
+
+  // Close on Background Click
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+</script>
+</body>
+</html>
